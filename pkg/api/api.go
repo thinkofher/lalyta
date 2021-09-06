@@ -12,7 +12,7 @@ import (
 	"github.com/thinkofher/lalyta/pkg/service/gen"
 )
 
-func Info(msg, version string) http.Handler {
+func Info(location, msg, version string) http.Handler {
 	type response struct {
 		MaxSyncSize int64  `json:"maxSyncSize"`
 		Message     string `json:"message"`
