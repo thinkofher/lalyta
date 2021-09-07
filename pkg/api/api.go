@@ -5,6 +5,9 @@ Below handlers contains information about what method should they be used with
 and what path should they be mounted to. It is dictated by xBrowserSync original
 API implementation.
 
+Handlers implemented by api package are completly indepedent of used http router.
+It is up to implementing person to choose proper http router.
+
 See xBrowserSync documentation for further information about what it is and how it
 works.
 */
@@ -18,7 +21,6 @@ import (
 	"time"
 
 	"github.com/alioygur/gores"
-	"github.com/go-chi/chi/v5"
 
 	"github.com/thinkofher/lalyta/pkg/models"
 	"github.com/thinkofher/lalyta/pkg/service/gen"
@@ -68,8 +70,20 @@ const idLength = 32
 // BookmarksStorage describes methods required for storing and retrieving
 // bookmarks from data source. It has to be thread safe.
 type BookmarksStorage interface {
+	// SetBookmarks method stores given encrypted Bookmarks
+	// in database.
 	SetBookmarks(ctx context.Context, b models.Bookmarks) error
+
+	// GetBookmarks retrieves encrypted Bookmarks with given id
+	// from database.
 	GetBookmarks(ctx context.Context, id string) (*models.Bookmarks, error)
+}
+
+// QueryParameters help to determine specific bookmarks.
+type QueryParameters interface {
+	// ID returns 32 character alphanumeric sync ID used
+	// by client.
+	ID(*http.Request) string
 }
 
 // ErrBookmarksNotFound is returned by BookmarksStorage when
@@ -173,7 +187,7 @@ func CreateBookmarks(storage BookmarksStorage) http.HandlerFunc {
 //
 // * Version ("version", string): version number of the xBrowserSync client used
 // to create the sync.
-func Bookmarks(storage BookmarksStorage) http.HandlerFunc {
+func Bookmarks(storage BookmarksStorage, params QueryParameters) http.HandlerFunc {
 	type response struct {
 		Bookmarks   string    `json:"bookmarks"`
 		LastUpdated time.Time `json:"lastUpdated"`
@@ -181,7 +195,7 @@ func Bookmarks(storage BookmarksStorage) http.HandlerFunc {
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		id := chi.URLParam(r, "id")
+		id := params.ID(r)
 		if id == "" {
 			// TODO(thinkofher) output json error message
 			w.WriteHeader(http.StatusBadRequest)
@@ -233,7 +247,7 @@ func Bookmarks(storage BookmarksStorage) http.HandlerFunc {
 //
 // Last updated ("lastUpdated", timestamp as string): last updated timestamp
 // for updated bookmarks.
-func UpdateBookmarks(storage BookmarksStorage) http.HandlerFunc {
+func UpdateBookmarks(storage BookmarksStorage, params QueryParameters) http.HandlerFunc {
 	type payload struct {
 		Bookmarks   string    `json:"bookmarks"`
 		LastUpdated time.Time `json:"lastUpdated"`
@@ -243,7 +257,7 @@ func UpdateBookmarks(storage BookmarksStorage) http.HandlerFunc {
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		id := chi.URLParam(r, "id")
+		id := params.ID(r)
 		if id == "" {
 			// TODO(thinkofher) output json error message
 			w.WriteHeader(http.StatusBadRequest)
@@ -305,13 +319,13 @@ func UpdateBookmarks(storage BookmarksStorage) http.HandlerFunc {
 //
 // * Last updated ("lastUpdated", timestamp as string): last updated
 // timestamp for corresponding bookmarks.
-func LastUpdated(storage BookmarksStorage) http.HandlerFunc {
+func LastUpdated(storage BookmarksStorage, params QueryParameters) http.HandlerFunc {
 	type response struct {
 		LastUpdated time.Time `json:"lastUpdated"`
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		id := chi.URLParam(r, "id")
+		id := params.ID(r)
 		if id == "" {
 			// TODO(thinkofher) output json error message
 			w.WriteHeader(http.StatusBadRequest)
@@ -348,13 +362,13 @@ func LastUpdated(storage BookmarksStorage) http.HandlerFunc {
 //
 // Version ("version", string): version number of the xBrowserSync client
 // used to create the sync.
-func Version(storage BookmarksStorage) http.HandlerFunc {
+func Version(storage BookmarksStorage, params QueryParameters) http.HandlerFunc {
 	type response struct {
 		Version string `json:"version"`
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		id := chi.URLParam(r, "id")
+		id := params.ID(r)
 		if id == "" {
 			// TODO(thinkofher) output json error message
 			w.WriteHeader(http.StatusBadRequest)
