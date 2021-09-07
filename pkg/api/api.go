@@ -8,11 +8,12 @@ import (
 	"time"
 
 	"github.com/alioygur/gores"
+	"github.com/go-chi/chi/v5"
 	"github.com/thinkofher/lalyta/pkg/models"
 	"github.com/thinkofher/lalyta/pkg/service/gen"
 )
 
-func Info(location, msg, version string) http.Handler {
+func Info(location, msg, version string) http.HandlerFunc {
 	type response struct {
 		MaxSyncSize int64  `json:"maxSyncSize"`
 		Message     string `json:"message"`
@@ -38,7 +39,7 @@ type BookmarksStorage interface {
 
 var ErrBookmarksNotFound = errors.New("bookmarks with given id has been not found")
 
-func CreateBookmarks(storage BookmarksStorage) http.Handler {
+func CreateBookmarks(storage BookmarksStorage) http.HandlerFunc {
 	type payload struct {
 		Version string `json:"version"`
 	}
@@ -76,7 +77,7 @@ func CreateBookmarks(storage BookmarksStorage) http.Handler {
 			return
 		}
 
-		gores.JSON(w, http.StatusCreated, &response{
+		gores.JSON(w, http.StatusOK, &response{
 			ID:          bookmarks.ID,
 			LastUpdated: bookmarks.LastUpdated,
 			Version:     bookmarks.Version,
@@ -84,7 +85,7 @@ func CreateBookmarks(storage BookmarksStorage) http.Handler {
 	})
 }
 
-func Bookmarks(storage BookmarksStorage) http.Handler {
+func Bookmarks(storage BookmarksStorage) http.HandlerFunc {
 	type response struct {
 		Bookmarks   string    `json:"bookmarks"`
 		LastUpdated time.Time `json:"lastUpdated"`
@@ -92,7 +93,7 @@ func Bookmarks(storage BookmarksStorage) http.Handler {
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		id := r.URL.Query().Get("id")
+		id := chi.URLParam(r, "id")
 		if id == "" {
 			// TODO(thinkofher) output json error message
 			w.WriteHeader(http.StatusBadRequest)
@@ -114,7 +115,7 @@ func Bookmarks(storage BookmarksStorage) http.Handler {
 	})
 }
 
-func UpdateBookmarks(storage BookmarksStorage) http.Handler {
+func UpdateBookmarks(storage BookmarksStorage) http.HandlerFunc {
 	type payload struct {
 		Bookmarks   string    `json:"bookmarks"`
 		LastUpdated time.Time `json:"lastUpdated"`
@@ -124,7 +125,7 @@ func UpdateBookmarks(storage BookmarksStorage) http.Handler {
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		id := r.URL.Query().Get("id")
+		id := chi.URLParam(r, "id")
 		if id == "" {
 			// TODO(thinkofher) output json error message
 			w.WriteHeader(http.StatusBadRequest)
@@ -169,13 +170,13 @@ func UpdateBookmarks(storage BookmarksStorage) http.Handler {
 	})
 }
 
-func LastUpdated(storage BookmarksStorage) http.Handler {
+func LastUpdated(storage BookmarksStorage) http.HandlerFunc {
 	type response struct {
 		LastUpdated time.Time `json:"lastUpdated"`
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		id := r.URL.Query().Get("id")
+		id := chi.URLParam(r, "id")
 		if id == "" {
 			// TODO(thinkofher) output json error message
 			w.WriteHeader(http.StatusBadRequest)
@@ -195,13 +196,13 @@ func LastUpdated(storage BookmarksStorage) http.Handler {
 	})
 }
 
-func Version(storage BookmarksStorage) http.Handler {
+func Version(storage BookmarksStorage) http.HandlerFunc {
 	type response struct {
 		Version string `json:"version"`
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		id := r.URL.Query().Get("id")
+		id := chi.URLParam(r, "id")
 		if id == "" {
 			// TODO(thinkofher) output json error message
 			w.WriteHeader(http.StatusBadRequest)
